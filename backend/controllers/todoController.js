@@ -68,6 +68,76 @@ exports.getTodoById = async(req,res) => {
   }
 }
 
+exports.getTodosByCategory = async(req,res) => {
+  try {
+    const { category } = req.query;
+
+    console.log(category);
+
+    const todos = await TodoModel.find({
+      category: {
+        $regex: category,
+        $options: "i"
+      }
+    })
+
+    if(!todos || todos.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Todos Not Found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: todos
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message
+    });
+  }
+}
+
+exports.searchTodoByTitle = async(req,res) => {
+  const { title } = req.query;
+
+  if(!title) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide title to search"
+    })
+  }
+
+  try {
+    const todos = await TodoModel.find({
+      title: { $regex: title, $options: "i"}
+    })
+
+    if(!todos || todos.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Todos Not Found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: todos
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message
+    });
+  }
+}
+
 exports.updateTodoById = async(req,res) => {
   try {
     const { id } = req.params;
@@ -112,7 +182,7 @@ exports.deleteTodoById = async(req,res) => {
       })
     }
     await TodoModel.findByIdAndDelete(id);
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
       message: "Todo deleted successfully"
     });

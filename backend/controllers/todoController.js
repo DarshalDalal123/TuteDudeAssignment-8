@@ -29,10 +29,34 @@ exports.createTodo = async(req,res) => {
 
 exports.getAllTodos = async(req,res) => {
   try {
-    const todos = await TodoModel.find();
+    const { title , category } = req.query;
+    const searchParams = {};
+    
+    if(title) {
+      searchParams.title = { $regex: title, $options: "i" }
+    }
+    if(category) {
+      searchParams.category = { $regex: category, $options: "i" }
+    }
+
+    const todos = await TodoModel.find(searchParams);
+    const pendingCount = await TodoModel.countDocuments({ ...searchParams, status: "pending" });
+    const completedCount = await TodoModel.countDocuments({ ...searchParams,  status: "completed" });
+
+    if(!todos || todos.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Todo Not Found"
+      })
+    }
+
     return res.status(200).json({
       success: true,
-      data: todos
+      data: todos,
+      counts : {
+        pending: pendingCount,
+        completed: completedCount
+      }
     });
   } catch (error) {
     console.error(error);
@@ -58,76 +82,6 @@ exports.getTodoById = async(req,res) => {
       success: true,
       data: todo
     })
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong",
-      error: error.message
-    });
-  }
-}
-
-exports.getTodosByCategory = async(req,res) => {
-  try {
-    const { category } = req.query;
-
-    console.log(category);
-
-    const todos = await TodoModel.find({
-      category: {
-        $regex: category,
-        $options: "i"
-      }
-    })
-
-    if(!todos || todos.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Todos Not Found"
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: todos
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong",
-      error: error.message
-    });
-  }
-}
-
-exports.searchTodoByTitle = async(req,res) => {
-  const { title } = req.query;
-
-  if(!title) {
-    return res.status(400).json({
-      success: false,
-      message: "Please provide title to search"
-    })
-  }
-
-  try {
-    const todos = await TodoModel.find({
-      title: { $regex: title, $options: "i"}
-    })
-
-    if(!todos || todos.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Todos Not Found"
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: todos
-    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({

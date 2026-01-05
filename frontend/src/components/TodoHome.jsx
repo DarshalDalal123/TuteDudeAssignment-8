@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from "axios"
 import TodoItem from './TodoItem';
 import Loader from './Loader';
+import TodoModel from './TodoModel';
+import { toast } from "react-hot-toast";
 
 const TodoHome = () => {
   const [todos, setTodos] = useState([]);
@@ -14,7 +16,9 @@ const TodoHome = () => {
   const [searchTitle, setSearchTitle] = useState("");
   const [pending, setPending] = useState(0);
   const [completed, setCompleted] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [openModal, setOpenModal] = useState(false);
+  const [id, setId] = useState(null);
 
   const addTodo = async(e) => {
     e.preventDefault();
@@ -27,13 +31,18 @@ const TodoHome = () => {
       .then((res) => {
         if (res.data.success === true) {
           console.log(res.data.message)
+          toast.success(res.data.message)
           getTodos();
         }
         else {
           console.error(res.data.message)
+          toast.error(res.data.message)
         }
       })
-      .catch(err => console.error(err))
+      .catch((err) => {
+        console.error(err)
+        toast.error(err.response.data.message)
+      })
       .finally(() => {
         setNewTodo({
           title: "",
@@ -54,6 +63,7 @@ const TodoHome = () => {
         }
         else {
           console.error(res.data.message)
+          toast.error(res.data.message)
         }
       })
       .catch(err => console.error(err))
@@ -63,12 +73,34 @@ const TodoHome = () => {
       });
   }
 
+  const openModalFunction = (id) => {
+    setOpenModal(true);
+    setId(id);
+  }
+
+  const deleteTodo = async(id) => {
+    await axios.delete(`${import.meta.env.VITE_API_URL}/api/todos/${id}`)
+      .then((res) => {
+        if (res.data.success === true) {
+          console.log(res.data.message)
+          toast.success(res.data.message)
+          getTodos();
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error(err.response.data.message)
+      })
+      .finally(() => {});
+  }
+
   useEffect(() => {
     getTodos();
   }, [searchCategory])
   return (
     <>
       {loading && <Loader />}
+      {openModal && <TodoModel setOpenModal={setOpenModal} id={id} refresh={getTodos} />}
       <div className='mt-5 mx-auto max-w-[70%]'>
         <div className='space-y-1'>
           <h1 className='text-center text-3xl font-bold'>My Todo List</h1>
@@ -116,7 +148,8 @@ const TodoHome = () => {
             </select>
             <button 
               type='submit' 
-              className='border border-gray-300 bg-black text-white rounded-xl py-3 px-6 text-[14px] hover:bg-black/50 transition-colors duration-200 cursor-pointer'
+              className='border border-gray-300 bg-black text-white rounded-xl py-3 px-6 text-[14px] hover:bg-black/50 transition-colors duration-200 cursor-pointer disabled:bg-black/50 disabled:cursor-not-allowed'
+              disabled={newTodo.title=="" || newTodo.description=="" || newTodo.category==""}
             >
               Add Todo
             </button>
@@ -177,7 +210,8 @@ const TodoHome = () => {
             <div className='w-[20%]'>
               <button 
                 type='button' 
-                className='border border-gray-300 rounded-xl py-2 px-4 w-full bg-black text-white hover:bg-black/50 transition-colors duration-200 cursor-pointer'
+                className='border border-gray-300 rounded-xl py-2 px-4 w-full bg-black text-white hover:bg-black/50 transition-colors duration-200 cursor-pointer disabled:bg-black/50 disabled:cursor-not-allowed'
+                disabled={searchTitle==""}
                 onClick={() => { getTodos() }}
               >
                 Search
@@ -186,7 +220,13 @@ const TodoHome = () => {
           </div>
           <div className='flex flex-col gap-3'>
             {todos.map((todo) => (
-              <TodoItem key={todo._id} todo={todo} refresh={getTodos} />
+              <TodoItem 
+                key={todo._id} 
+                todo={todo} 
+                refresh={getTodos} 
+                openModalFunction={openModalFunction} 
+                deleteTodoFunction={deleteTodo}
+              />
             ))}
           </div>
         </div>

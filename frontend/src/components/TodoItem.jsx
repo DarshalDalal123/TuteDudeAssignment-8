@@ -1,15 +1,17 @@
-import axios from 'axios'
-import React from 'react'
+import axios from 'axios';
+import { toast } from "react-hot-toast";
 
-const TodoItem = ({ todo, refresh }) => {
+const TodoItem = ({ todo, refresh, openModalFunction, deleteTodoFunction }) => {
   const changeStatus = async (id, status) => {
     const newStatus = status === "pending" ? "completed" : "pending";
     try {
       const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/todos/${id}`, { status: newStatus });
       console.log(res.data.message);
+      toast.success(res.data.message);
       if (typeof refresh === "function") refresh();
     } catch (err) {
       console.error(err);
+      toast.error(err.response.data.message);
     }
   };
   return (
@@ -22,8 +24,19 @@ const TodoItem = ({ todo, refresh }) => {
         <p className='text-[14px]'>{todo.category}</p>
         <p className='text-[14px]'>{todo.description}</p>
       </div>
-      <div className='w-[25%] flex justify-center items-center'>
-        <button className='border border-gray-300 rounded-xl py-2 px-4 bg-black text-white hover:bg-black/50 transition-colors duration-200 cursor-pointer'>Delete</button>
+      <div className='w-[25%] flex justify-center items-center gap-2'>
+        <button 
+          className='border border-gray-300 rounded-xl py-2 px-4 bg-black text-white hover:bg-black/50 transition-colors duration-200 cursor-pointer'
+          onClick={() => {openModalFunction(todo._id)}}
+        >
+          View/Edit
+        </button>
+        <button 
+          className='border border-gray-300 rounded-xl py-2 px-4 bg-black text-white hover:bg-black/50 transition-colors duration-200 cursor-pointer'
+          onClick={() => {deleteTodoFunction(todo._id)}}
+        >
+          Delete
+        </button>
       </div>
     </div>
   )
